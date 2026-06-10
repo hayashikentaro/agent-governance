@@ -17,11 +17,33 @@ principles:
     title: Prefer local duplication over premature shared abstraction.
     description: Boilerplate is acceptable when it preserves capability boundaries. Shared abstractions are privileged because they widen future change scope.
 
+  - id: verdicts_for_structure_scores_for_suspicion
+    title: Use verdicts for structural violations and scores for semantic suspicion.
+    description: Deterministic policy violations should produce verdicts. Heuristic smells should produce suspicion scores that route work to semantic review.
+
 verdicts:
   PASS: Allowed.
   BLOCK: Must be fixed before review.
   SPLIT: Must be split into smaller tasks or PRs.
   HUMAN_DECISION: Requires explicit human approval.
+
+suspicion_levels:
+  LOW:
+    min_score: 0
+    max_score: 29
+    action: PASS_FAST
+  MEDIUM:
+    min_score: 30
+    max_score: 59
+    action: WARN_ONLY
+  NEEDS_SEMANTIC_REVIEW:
+    min_score: 60
+    max_score: 79
+    action: ROUTE_TO_HEAVY_REVIEWER
+  HIGH:
+    min_score: 80
+    max_score: 100
+    action: HUMAN_DECISION
 
 rules:
   - id: one_primary_layer_boundary
@@ -51,6 +73,22 @@ rules:
     agent_guidance: Do not edit outside the write paths granted by your task contract.
     type: write_scope
     on_violation: BLOCK
+
+  - id: import_boundaries_are_structural
+    title: Import boundaries are structural policy, not semantic review.
+    agent_guidance: Import direction is checked by classification tables and allowed dependency rules. Do not ask an LLM to decide import legality.
+    type: import_boundary
+    source: governance/import-boundaries.yaml
+    on_violation: BLOCK
+
+  - id: suspicious_patterns_route_semantic_review
+    title: Suspicious patterns route work to semantic review.
+    agent_guidance: Suspicion scores are not guilt. They are deterministic smell signals used to decide whether heavier review is worth the cost.
+    type: suspicion_score
+    source: governance/suspicious-patterns.yaml
+    on_threshold:
+      NEEDS_SEMANTIC_REVIEW: HUMAN_DECISION
+      HIGH: HUMAN_DECISION
 
   - id: shared_requires_approval
     title: Shared changes require approval.
