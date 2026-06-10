@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node scripts/generate-governance.mjs"
+    "generate": "node scripts/generate-governance.mjs",
+    "check:changed-files": "node scripts/check-changed-files.mjs",
+    "check:pr": "npm run generate && npm run check:changed-files --"
   },
   "dependencies": {
+    "minimatch": "^10.0.1",
     "yaml": "^2.7.0"
   }
 }
