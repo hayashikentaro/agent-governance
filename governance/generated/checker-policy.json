@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "generatedFrom": [
+    "governance/policy.yaml",
+    "governance/domains.yaml",
+    "governance/capabilities.yaml"
+  ],
+  "verdicts": {
+    "PASS": "Allowed.",
+    "BLOCK": "Must be fixed before review.",
+    "SPLIT": "Must be split into smaller tasks or PRs.",
+    "HUMAN_DECISION": "Requires explicit human approval."
+  },
+  "principles": [
+    {
+      "id": "capability_not_obedience",
+      "title": "Govern agents by capability, not by obedience.",
+      "description": "Do not ask agents to behave. Constrain what they can read, write, execute, and escalate."
+    }
+  ],
+  "domains": {
+    "web_attention": {
+      "description": "Web UI and client-side behavior for attention/supervision state.",
+      "paths": [
+        "apps/web/src/domains/attention/**"
+      ]
+    },
+    "web_task_list": {
+      "description": "Web UI and client-side behavior for task list presentation.",
+      "paths": [
+        "apps/web/src/domains/task-list/**"
+      ]
+    },
+    "server_attention": {
+      "description": "Server-side attention/supervision classification and persistence.",
+      "paths": [
+        "apps/server/src/domains/attention/**"
+      ]
+    },
+    "core_attention": {
+      "description": "Shared core types and logic for attention/supervision state.",
+      "paths": [
+        "packages/core/src/domains/attention/**"
+      ]
+    },
+    "docs": {
+      "description": "Documentation only.",
+      "paths": [
+        "README.md",
+        "docs/**"
+      ]
+    }
+  },
+  "protectedDomains": {
+    "shared": {
+      "description": "Shared code is privileged. Do not use it as a dumping ground.",
+      "paths": [
+        "apps/**/src/shared/**",
+        "packages/shared/**"
+      ],
+      "default_verdict": "HUMAN_DECISION"
+    }
+  },
+  "capabilityProfiles": {
+    "ui_patch": {
+      "description": "Patch UI inside one granted domain.",
+      "read": [
+        "{domain}/**",
+        "packages/core/src/domains/**/types/**"
+      ],
+      "write": [
+        "{domain}/ui/**",
+        "{domain}/tests/**"
+      ],
+      "execute": [
+        "pnpm lint",
+        "pnpm test"
+      ],
+      "denied": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "package-lock.json",
+        "apps/server/**"
+      ],
+      "escalation": {
+        "outside_write_scope": "HUMAN_DECISION",
+        "dependency_change": "HUMAN_DECISION",
+        "shared_change": "HUMAN_DECISION"
+      }
+    },
+    "domain_logic_patch": {
+      "description": "Patch logic inside one granted domain.",
+      "read": [
+        "{domain}/**",
+        "packages/core/**"
+      ],
+      "write": [
+        "{domain}/logic/**",
+        "{domain}/model/**",
+        "{domain}/tests/**"
+      ],
+      "execute": [
+        "pnpm lint",
+        "pnpm test",
+        "pnpm typecheck"
+      ],
+      "denied": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "package-lock.json"
+      ],
+      "escalation": {
+        "outside_write_scope": "HUMAN_DECISION",
+        "dependency_change": "HUMAN_DECISION",
+        "shared_change": "HUMAN_DECISION"
+      }
+    },
+    "docs_only": {
+      "description": "Documentation-only work.",
+      "read": [
+        "**/*"
+      ],
+      "write": [
+        "README.md",
+        "docs/**"
+      ],
+      "execute": [],
+      "denied": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "package-lock.json",
+        "apps/**",
+        "packages/**"
+      ],
+      "escalation": {
+        "code_change": "BLOCK"
+      }
+    },
+    "vertical_slice": {
+      "description": "Explicitly approved cross-domain feature work.",
+      "requires_human_approval": true,
+      "max_domains": 3,
+      "required_declaration": [
+        "affected_domains",
+        "reason",
+        "rollback_plan"
+      ],
+      "escalation": {
+        "undeclared_domain": "BLOCK",
+        "dependency_change": "HUMAN_DECISION",
+        "shared_change": "HUMAN_DECISION"
+      }
+    }
+  },
+  "rules": [
+    {
+      "id": "one_primary_domain",
+      "title": "One task, one primary domain.",
+      "type": "domain_count",
+      "verdict": "SPLIT",
+      "maxDomains": 1,
+      "exceptions": [
+        "vertical_slice",
+        "api_contract_update"
+      ]
+    },
+    {
+      "id": "granted_write_scope_only",
+      "title": "Write only inside granted paths.",
+      "type": "write_scope",
+      "verdict": "BLOCK",
+      "exceptions": []
+    },
+    {
+      "id": "shared_requires_approval",
+      "title": "Shared changes require approval.",
+      "type": "protected_domain",
+      "verdict": "HUMAN_DECISION",
+      "domains": [
+        "shared"
+      ],
+      "exceptions": []
+    },
+    {
+      "id": "dependency_requires_approval",
+      "title": "Dependency changes require approval.",
+      "type": "path_match",
+      "verdict": "HUMAN_DECISION",
+      "paths": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "package-lock.json"
+      ],
+      "exceptions": []
+    },
+    {
+      "id": "generated_files_readonly",
+      "title": "Generated files are read-only.",
+      "type": "path_match",
+      "verdict": "BLOCK",
+      "paths": [
+        "**/generated/**",
+        "TODO.md",
+        "CONTEXT.md",
+        "THREADS.md"
+      ],
+      "exceptions": []
+    },
+    {
+      "id": "escalate_when_scope_is_insufficient",
+      "title": "Request escalation instead of expanding scope.",
+      "type": "escalation_required",
+      "verdict": "HUMAN_DECISION",
+      "exceptions": []
+    }
+  ]
+}
