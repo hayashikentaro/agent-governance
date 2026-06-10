@@ -1,0 +1,40 @@
+version: 1
+
+# Domain boundaries should be reflected in directory boundaries.
+# A checker can map changed files to these domains and reject or split work
+# that crosses granted capabilities.
+
+domains:
+  web_attention:
+    description: Web UI and client-side behavior for attention/supervision state.
+    paths:
+      - apps/web/src/domains/attention/**
+
+  web_task_list:
+    description: Web UI and client-side behavior for task list presentation.
+    paths:
+      - apps/web/src/domains/task-list/**
+
+  server_attention:
+    description: Server-side attention/supervision classification and persistence.
+    paths:
+      - apps/server/src/domains/attention/**
+
+  core_attention:
+    description: Shared core types and logic for attention/supervision state.
+    paths:
+      - packages/core/src/domains/attention/**
+
+  docs:
+    description: Documentation only.
+    paths:
+      - README.md
+      - docs/**
+
+protected_domains:
+  shared:
+    description: Shared code is privileged. Do not use it as a dumping ground.
+    paths:
+      - apps/**/src/shared/**
+      - packages/shared/**
+    default_verdict: HUMAN_DECISION
