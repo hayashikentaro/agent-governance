@@ -19,14 +19,14 @@
       "description": "Do not ask agents to behave. Constrain what they can read, write, execute, and escalate."
     },
     {
-      "id": "named_junction_for_meaningful_cross_domain_work",
-      "title": "Meaningful cross-domain work must be a small named junction.",
-      "description": "When cross-domain coordination has business meaning, do not treat it as broad vertical-slice freedom. Name the junction, bound it, and keep the diff small."
+      "id": "layer_boundaries_by_default",
+      "title": "Keep layer boundaries by default.",
+      "description": "Horizontal layer boundaries are the default editing boundary because they limit implementation responsibility without introducing ambiguous product-boundary choices."
     },
     {
-      "id": "dual_product_and_layer_boundaries",
-      "title": "Keep both product and layer boundaries unless working inside a named junction.",
-      "description": "A product boundary limits the feature world. A layer boundary limits the implementation responsibility. Non-junction work should stay inside both."
+      "id": "named_junction_for_side_effect_crossings",
+      "title": "Use small named junctions for side-effect crossings.",
+      "description": "Junctions are for unavoidable crossings where side effects meet and the coordination itself has meaning. They are controlled exceptions, not a general architecture style."
     },
     {
       "id": "prefer_local_duplication_over_premature_shared_abstraction",
@@ -37,67 +37,39 @@
   "domains": {
     "web_attention": {
       "description": "Web UI and client-side behavior for attention/supervision state.",
-      "paths": [
-        "apps/web/src/domains/attention/**"
-      ]
+      "paths": ["apps/web/src/domains/attention/**"]
     },
     "web_task_list": {
       "description": "Web UI and client-side behavior for task list presentation.",
-      "paths": [
-        "apps/web/src/domains/task-list/**"
-      ]
+      "paths": ["apps/web/src/domains/task-list/**"]
     },
     "server_attention": {
       "description": "Server-side attention/supervision classification and persistence.",
-      "paths": [
-        "apps/server/src/domains/attention/**"
-      ]
+      "paths": ["apps/server/src/domains/attention/**"]
     },
     "core_attention": {
       "description": "Shared core types and logic for attention/supervision state.",
-      "paths": [
-        "packages/core/src/domains/attention/**"
-      ]
+      "paths": ["packages/core/src/domains/attention/**"]
     },
     "docs": {
       "description": "Documentation only.",
-      "paths": [
-        "README.md",
-        "docs/**"
-      ]
+      "paths": ["README.md", "docs/**"]
     }
   },
   "protectedDomains": {
     "shared": {
       "description": "Shared code is privileged. Do not use it as a dumping ground.",
-      "paths": [
-        "apps/**/src/shared/**",
-        "packages/shared/**"
-      ],
+      "paths": ["apps/**/src/shared/**", "packages/shared/**"],
       "default_verdict": "HUMAN_DECISION"
     }
   },
   "capabilityProfiles": {
     "ui_patch": {
       "description": "Patch UI inside one granted domain.",
-      "read": [
-        "{domain}/**",
-        "packages/core/src/domains/**/types/**"
-      ],
-      "write": [
-        "{domain}/ui/**",
-        "{domain}/tests/**"
-      ],
-      "execute": [
-        "pnpm lint",
-        "pnpm test"
-      ],
-      "denied": [
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json",
-        "apps/server/**"
-      ],
+      "read": ["{domain}/**", "packages/core/src/domains/**/types/**"],
+      "write": ["{domain}/ui/**", "{domain}/tests/**"],
+      "execute": ["pnpm lint", "pnpm test"],
+      "denied": ["package.json", "pnpm-lock.yaml", "package-lock.json", "apps/server/**"],
       "escalation": {
         "outside_write_scope": "HUMAN_DECISION",
         "dependency_change": "HUMAN_DECISION",
@@ -106,25 +78,10 @@
     },
     "domain_logic_patch": {
       "description": "Patch logic inside one granted domain.",
-      "read": [
-        "{domain}/**",
-        "packages/core/**"
-      ],
-      "write": [
-        "{domain}/logic/**",
-        "{domain}/model/**",
-        "{domain}/tests/**"
-      ],
-      "execute": [
-        "pnpm lint",
-        "pnpm test",
-        "pnpm typecheck"
-      ],
-      "denied": [
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json"
-      ],
+      "read": ["{domain}/**", "packages/core/**"],
+      "write": ["{domain}/logic/**", "{domain}/model/**", "{domain}/tests/**"],
+      "execute": ["pnpm lint", "pnpm test", "pnpm typecheck"],
+      "denied": ["package.json", "pnpm-lock.yaml", "package-lock.json"],
       "escalation": {
         "outside_write_scope": "HUMAN_DECISION",
         "dependency_change": "HUMAN_DECISION",
@@ -133,50 +90,27 @@
     },
     "docs_only": {
       "description": "Documentation-only work.",
-      "read": [
-        "**/*"
-      ],
-      "write": [
-        "README.md",
-        "docs/**"
-      ],
+      "read": ["**/*"],
+      "write": ["README.md", "docs/**"],
       "execute": [],
-      "denied": [
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json",
-        "apps/**",
-        "packages/**"
-      ],
-      "escalation": {
-        "code_change": "BLOCK"
-      }
+      "denied": ["package.json", "pnpm-lock.yaml", "package-lock.json", "apps/**", "packages/**"],
+      "escalation": {"code_change": "BLOCK"}
     },
     "junction_integration": {
-      "description": "Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.",
+      "description": "Coordinate a small named junction where side effects meet and coordination semantics matter.",
       "requires_human_approval": true,
       "max_domains": 3,
       "max_changed_files": 8,
       "max_changed_lines": 400,
-      "write": [
-        "src/junctions/{junction}/**",
-        "src/tests/junctions/{junction}.test.*",
-        "docs/junctions/{junction}.md"
-      ],
-      "readonly": [
-        "src/core/**",
-        "src/domains/**",
-        "src/adapters/**",
-        "src/runtime/**"
-      ],
+      "write": ["src/junctions/{junction}/**", "src/tests/junctions/{junction}.test.*", "docs/junctions/{junction}.md"],
+      "readonly": ["src/core/**", "src/domains/**", "src/adapters/**", "src/runtime/**"],
       "required_declaration": [
         "junction_name",
-        "participating_domains",
         "participating_effects",
         "coordination_semantics",
         "execution_order",
         "failure_semantics",
-        "compensation_or_retry_policy",
+        "retry_or_compensation_policy",
         "acceptance_criteria",
         "rollback_plan"
       ],
@@ -193,13 +127,7 @@
       "max_domains": 3,
       "max_changed_files": 8,
       "max_changed_lines": 400,
-      "required_declaration": [
-        "affected_domains",
-        "reason",
-        "acceptance_criteria",
-        "rollback_plan",
-        "split_plan"
-      ],
+      "required_declaration": ["affected_domains", "reason", "acceptance_criteria", "rollback_plan", "split_plan"],
       "escalation": {
         "undeclared_domain": "BLOCK",
         "dependency_change": "HUMAN_DECISION",
@@ -212,36 +140,16 @@
       "description": "Documentation-only work.",
       "capability_profile": "docs_only",
       "default_domain": "docs",
-      "write": [
-        "README.md",
-        "docs/**"
-      ],
-      "denied": [
-        "apps/**",
-        "packages/**",
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json"
-      ],
-      "escalation": {
-        "code_change": "BLOCK"
-      }
+      "write": ["README.md", "docs/**"],
+      "denied": ["apps/**", "packages/**", "package.json", "pnpm-lock.yaml", "package-lock.json"],
+      "escalation": {"code_change": "BLOCK"}
     },
     "ui_patcher": {
       "description": "Small UI-only changes inside one granted domain.",
       "capability_profile": "ui_patch",
       "requires_domain": true,
-      "write": [
-        "{domain}/ui/**",
-        "{domain}/tests/**"
-      ],
-      "denied": [
-        "apps/server/**",
-        "packages/core/**",
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json"
-      ],
+      "write": ["{domain}/ui/**", "{domain}/tests/**"],
+      "denied": ["apps/server/**", "packages/core/**", "package.json", "pnpm-lock.yaml", "package-lock.json"],
       "escalation": {
         "outside_domain": "HUMAN_DECISION",
         "shared_change": "HUMAN_DECISION",
@@ -252,18 +160,8 @@
       "description": "Logic/model changes inside one granted domain.",
       "capability_profile": "domain_logic_patch",
       "requires_domain": true,
-      "write": [
-        "{domain}/logic/**",
-        "{domain}/model/**",
-        "{domain}/tests/**"
-      ],
-      "denied": [
-        "apps/**/src/shared/**",
-        "packages/shared/**",
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json"
-      ],
+      "write": ["{domain}/logic/**", "{domain}/model/**", "{domain}/tests/**"],
+      "denied": ["apps/**/src/shared/**", "packages/shared/**", "package.json", "pnpm-lock.yaml", "package-lock.json"],
       "escalation": {
         "outside_domain": "HUMAN_DECISION",
         "shared_change": "HUMAN_DECISION",
@@ -273,36 +171,19 @@
     "governance_editor": {
       "description": "Edit governance definitions, generation scripts, and checker logic.",
       "capability_profile": "governance_patch",
-      "write": [
-        "governance/**",
-        "scripts/**",
-        "package.json"
-      ],
+      "write": ["governance/**", "scripts/**", "package.json"],
       "escalation": {
         "dependency_change": "HUMAN_DECISION",
         "workflow_change": "HUMAN_DECISION"
       }
     },
     "junction_integrator": {
-      "description": "Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.",
+      "description": "Coordinate a small named junction across multiple domains when side effects meet and their coordination semantics matter.",
       "capability_profile": "junction_integration",
       "requires_human_approval": true,
-      "write": [
-        "src/junctions/{junction}/**",
-        "src/tests/junctions/{junction}.test.*",
-        "docs/junctions/{junction}.md"
-      ],
-      "readonly": [
-        "src/core/**",
-        "src/domains/**",
-        "src/adapters/**",
-        "src/runtime/**"
-      ],
-      "limits": {
-        "max_domains": 3,
-        "max_changed_files": 8,
-        "max_changed_lines": 400
-      },
+      "write": ["src/junctions/{junction}/**", "src/tests/junctions/{junction}.test.*", "docs/junctions/{junction}.md"],
+      "readonly": ["src/core/**", "src/domains/**", "src/adapters/**", "src/runtime/**"],
+      "limits": {"max_domains": 3, "max_changed_files": 8, "max_changed_lines": 400},
       "required_declaration": [
         "junction_name",
         "participating_domains",
@@ -314,11 +195,7 @@
         "acceptance_criteria",
         "rollback_plan"
       ],
-      "forbidden_mix": [
-        "feature_change + unrelated_refactor",
-        "dependency_change + junction_change",
-        "formatting_cleanup + behavior_change"
-      ],
+      "forbidden_mix": ["feature_change + unrelated_refactor", "dependency_change + junction_change", "formatting_cleanup + behavior_change"],
       "escalation": {
         "unnamed_cross_domain_work": "BLOCK",
         "outside_junction_boundary": "HUMAN_DECISION",
@@ -330,11 +207,7 @@
       "description": "Cross-domain feature work with explicit human approval.",
       "capability_profile": "vertical_slice",
       "requires_human_approval": true,
-      "required_declaration": [
-        "affected_domains",
-        "reason",
-        "rollback_plan"
-      ],
+      "required_declaration": ["affected_domains", "reason", "rollback_plan"],
       "escalation": {
         "undeclared_domain": "BLOCK",
         "shared_change": "HUMAN_DECISION",
@@ -344,27 +217,12 @@
   },
   "rules": [
     {
-      "id": "one_primary_product_boundary",
-      "title": "One task, one primary product boundary.",
-      "type": "product_count",
-      "verdict": "SPLIT",
-      "maxProducts": 1,
-      "exceptions": [
-        "vertical_slice",
-        "junction_integration"
-      ]
-    },
-    {
       "id": "one_primary_layer_boundary",
       "title": "One task, one primary layer boundary unless it is a named junction.",
       "type": "layer_count",
       "verdict": "SPLIT",
       "maxLayers": 1,
-      "exceptions": [
-        "junction_integration",
-        "vertical_slice",
-        "api_contract_update"
-      ]
+      "exceptions": ["junction_integration", "vertical_slice", "api_contract_update"]
     },
     {
       "id": "one_primary_domain",
@@ -372,11 +230,7 @@
       "type": "domain_count",
       "verdict": "SPLIT",
       "maxDomains": 1,
-      "exceptions": [
-        "vertical_slice",
-        "api_contract_update",
-        "junction_integration"
-      ]
+      "exceptions": ["vertical_slice", "api_contract_update", "junction_integration"]
     },
     {
       "id": "granted_write_scope_only",
@@ -390,9 +244,7 @@
       "title": "Shared changes require approval.",
       "type": "protected_domain",
       "verdict": "HUMAN_DECISION",
-      "domains": [
-        "shared"
-      ],
+      "domains": ["shared"],
       "exceptions": []
     },
     {
@@ -400,11 +252,7 @@
       "title": "Dependency changes require approval.",
       "type": "path_match",
       "verdict": "HUMAN_DECISION",
-      "paths": [
-        "package.json",
-        "pnpm-lock.yaml",
-        "package-lock.json"
-      ],
+      "paths": ["package.json", "pnpm-lock.yaml", "package-lock.json"],
       "exceptions": []
     },
     {
@@ -412,24 +260,19 @@
       "title": "Generated files are read-only.",
       "type": "path_match",
       "verdict": "BLOCK",
-      "paths": [
-        "**/generated/**",
-        "TODO.md",
-        "CONTEXT.md",
-        "THREADS.md"
-      ],
+      "paths": ["**/generated/**", "TODO.md", "CONTEXT.md", "THREADS.md"],
       "exceptions": []
     },
     {
-      "id": "meaningful_cross_domain_requires_named_junction",
-      "title": "Meaningful cross-domain coordination requires a named junction.",
+      "id": "side_effect_crossing_requires_named_junction",
+      "title": "Side-effect crossings require a named junction.",
       "type": "declaration_required",
       "verdict": "HUMAN_DECISION",
       "exceptions": []
     },
     {
-      "id": "junction_is_not_product_boundary_replacement",
-      "title": "A junction is not a replacement for product and layer boundaries.",
+      "id": "junction_is_controlled_exception",
+      "title": "A junction is a controlled exception.",
       "type": "declaration_required",
       "verdict": "HUMAN_DECISION",
       "exceptions": []
