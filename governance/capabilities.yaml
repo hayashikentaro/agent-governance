@@ -1,0 +1,84 @@
+version: 1
+
+# Capability profiles define what an agent can read, write, execute, and escalate.
+# They are not suggestions. They are the contract used by checkers and guards.
+
+verdicts:
+  PASS: Allowed.
+  BLOCK: Must be fixed before review.
+  SPLIT: Must be split into smaller tasks or PRs.
+  HUMAN_DECISION: Requires explicit human approval.
+
+capability_profiles:
+  ui_patch:
+    description: Patch UI inside one granted domain.
+    read:
+      - "{domain}/**"
+      - packages/core/src/domains/**/types/**
+    write:
+      - "{domain}/ui/**"
+      - "{domain}/tests/**"
+    execute:
+      - pnpm lint
+      - pnpm test
+    denied:
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+      - apps/server/**
+    escalation:
+      outside_write_scope: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
+
+  domain_logic_patch:
+    description: Patch logic inside one granted domain.
+    read:
+      - "{domain}/**"
+      - packages/core/**
+    write:
+      - "{domain}/logic/**"
+      - "{domain}/model/**"
+      - "{domain}/tests/**"
+    execute:
+      - pnpm lint
+      - pnpm test
+      - pnpm typecheck
+    denied:
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+    escalation:
+      outside_write_scope: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
+
+  docs_only:
+    description: Documentation-only work.
+    read:
+      - "**/*"
+    write:
+      - README.md
+      - docs/**
+    execute: []
+    denied:
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+      - apps/**
+      - packages/**
+    escalation:
+      code_change: BLOCK
+
+  vertical_slice:
+    description: Explicitly approved cross-domain feature work.
+    requires_human_approval: true
+    max_domains: 3
+    required_declaration:
+      - affected_domains
+      - reason
+      - rollback_plan
+    escalation:
+      undeclared_domain: BLOCK
+      dependency_change: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
