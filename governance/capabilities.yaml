@@ -70,14 +70,49 @@ capability_profiles:
     escalation:
       code_change: BLOCK
 
+  junction_integration:
+    description: Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.
+    requires_human_approval: true
+    max_domains: 3
+    max_changed_files: 8
+    max_changed_lines: 400
+    write:
+      - "src/junctions/{junction}/**"
+      - "src/tests/junctions/{junction}.test.*"
+      - "docs/junctions/{junction}.md"
+    readonly:
+      - src/core/**
+      - src/domains/**
+      - src/adapters/**
+      - src/runtime/**
+    required_declaration:
+      - junction_name
+      - participating_domains
+      - participating_effects
+      - coordination_semantics
+      - execution_order
+      - failure_semantics
+      - compensation_or_retry_policy
+      - acceptance_criteria
+      - rollback_plan
+    escalation:
+      unnamed_cross_domain_work: BLOCK
+      outside_junction_boundary: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
+
   vertical_slice:
     description: Explicitly approved cross-domain feature work.
     requires_human_approval: true
     max_domains: 3
+    max_changed_files: 8
+    max_changed_lines: 400
     required_declaration:
       - affected_domains
       - reason
+      - acceptance_criteria
       - rollback_plan
+      - split_plan
     escalation:
       undeclared_domain: BLOCK
       dependency_change: HUMAN_DECISION
