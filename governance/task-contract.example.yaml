@@ -1,0 +1,41 @@
+version: 1
+
+# A task contract is the concrete capability grant for one agent run.
+# The agent may not expand this contract by itself.
+
+task_contract:
+  id: attention-ack-button-ui
+  objective: Add an acknowledged-state affordance near the Needs you badge.
+
+  profile: ui_patch
+  primary_domain: web_attention
+
+  allowed_write_paths:
+    - apps/web/src/domains/attention/ui/**
+    - apps/web/src/domains/attention/tests/**
+
+  readonly_paths:
+    - packages/core/src/domains/attention/**
+    - apps/web/src/domains/task-list/**
+
+  forbidden_paths:
+    - apps/server/**
+    - package.json
+    - pnpm-lock.yaml
+    - package-lock.json
+    - .env*
+
+  required_checks:
+    - pnpm lint
+    - pnpm test
+
+  escalation_policy:
+    outside_write_scope: HUMAN_DECISION
+    dependency_change: HUMAN_DECISION
+    shared_change: HUMAN_DECISION
+    cross_domain_change: HUMAN_DECISION
+
+  completion_claim_requires:
+    - diff_within_allowed_write_paths
+    - required_checks_reported
+    - no_forbidden_paths_changed
