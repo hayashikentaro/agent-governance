@@ -17,6 +17,21 @@
       "id": "capability_not_obedience",
       "title": "Govern agents by capability, not by obedience.",
       "description": "Do not ask agents to behave. Constrain what they can read, write, execute, and escalate."
+    },
+    {
+      "id": "named_junction_for_meaningful_cross_domain_work",
+      "title": "Meaningful cross-domain work must be a small named junction.",
+      "description": "When cross-domain coordination has business meaning, do not treat it as broad vertical-slice freedom. Name the junction, bound it, and keep the diff small."
+    },
+    {
+      "id": "dual_product_and_layer_boundaries",
+      "title": "Keep both product and layer boundaries unless working inside a named junction.",
+      "description": "A product boundary limits the feature world. A layer boundary limits the implementation responsibility. Non-junction work should stay inside both."
+    },
+    {
+      "id": "prefer_local_duplication_over_premature_shared_abstraction",
+      "title": "Prefer local duplication over premature shared abstraction.",
+      "description": "Boilerplate is acceptable when it preserves capability boundaries. Shared abstractions are privileged because they widen future change scope."
     }
   ],
   "domains": {
@@ -137,14 +152,53 @@
         "code_change": "BLOCK"
       }
     },
+    "junction_integration": {
+      "description": "Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.",
+      "requires_human_approval": true,
+      "max_domains": 3,
+      "max_changed_files": 8,
+      "max_changed_lines": 400,
+      "write": [
+        "src/junctions/{junction}/**",
+        "src/tests/junctions/{junction}.test.*",
+        "docs/junctions/{junction}.md"
+      ],
+      "readonly": [
+        "src/core/**",
+        "src/domains/**",
+        "src/adapters/**",
+        "src/runtime/**"
+      ],
+      "required_declaration": [
+        "junction_name",
+        "participating_domains",
+        "participating_effects",
+        "coordination_semantics",
+        "execution_order",
+        "failure_semantics",
+        "compensation_or_retry_policy",
+        "acceptance_criteria",
+        "rollback_plan"
+      ],
+      "escalation": {
+        "unnamed_cross_domain_work": "BLOCK",
+        "outside_junction_boundary": "HUMAN_DECISION",
+        "dependency_change": "HUMAN_DECISION",
+        "shared_change": "HUMAN_DECISION"
+      }
+    },
     "vertical_slice": {
       "description": "Explicitly approved cross-domain feature work.",
       "requires_human_approval": true,
       "max_domains": 3,
+      "max_changed_files": 8,
+      "max_changed_lines": 400,
       "required_declaration": [
         "affected_domains",
         "reason",
-        "rollback_plan"
+        "acceptance_criteria",
+        "rollback_plan",
+        "split_plan"
       ],
       "escalation": {
         "undeclared_domain": "BLOCK",
@@ -229,6 +283,49 @@
         "workflow_change": "HUMAN_DECISION"
       }
     },
+    "junction_integrator": {
+      "description": "Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.",
+      "capability_profile": "junction_integration",
+      "requires_human_approval": true,
+      "write": [
+        "src/junctions/{junction}/**",
+        "src/tests/junctions/{junction}.test.*",
+        "docs/junctions/{junction}.md"
+      ],
+      "readonly": [
+        "src/core/**",
+        "src/domains/**",
+        "src/adapters/**",
+        "src/runtime/**"
+      ],
+      "limits": {
+        "max_domains": 3,
+        "max_changed_files": 8,
+        "max_changed_lines": 400
+      },
+      "required_declaration": [
+        "junction_name",
+        "participating_domains",
+        "participating_effects",
+        "coordination_semantics",
+        "execution_order",
+        "failure_semantics",
+        "compensation_or_retry_policy",
+        "acceptance_criteria",
+        "rollback_plan"
+      ],
+      "forbidden_mix": [
+        "feature_change + unrelated_refactor",
+        "dependency_change + junction_change",
+        "formatting_cleanup + behavior_change"
+      ],
+      "escalation": {
+        "unnamed_cross_domain_work": "BLOCK",
+        "outside_junction_boundary": "HUMAN_DECISION",
+        "shared_change": "HUMAN_DECISION",
+        "dependency_change": "HUMAN_DECISION"
+      }
+    },
     "vertical_slice_worker": {
       "description": "Cross-domain feature work with explicit human approval.",
       "capability_profile": "vertical_slice",
@@ -247,6 +344,29 @@
   },
   "rules": [
     {
+      "id": "one_primary_product_boundary",
+      "title": "One task, one primary product boundary.",
+      "type": "product_count",
+      "verdict": "SPLIT",
+      "maxProducts": 1,
+      "exceptions": [
+        "vertical_slice",
+        "junction_integration"
+      ]
+    },
+    {
+      "id": "one_primary_layer_boundary",
+      "title": "One task, one primary layer boundary unless it is a named junction.",
+      "type": "layer_count",
+      "verdict": "SPLIT",
+      "maxLayers": 1,
+      "exceptions": [
+        "junction_integration",
+        "vertical_slice",
+        "api_contract_update"
+      ]
+    },
+    {
       "id": "one_primary_domain",
       "title": "One task, one primary domain.",
       "type": "domain_count",
@@ -254,7 +374,8 @@
       "maxDomains": 1,
       "exceptions": [
         "vertical_slice",
-        "api_contract_update"
+        "api_contract_update",
+        "junction_integration"
       ]
     },
     {
@@ -297,6 +418,20 @@
         "CONTEXT.md",
         "THREADS.md"
       ],
+      "exceptions": []
+    },
+    {
+      "id": "meaningful_cross_domain_requires_named_junction",
+      "title": "Meaningful cross-domain coordination requires a named junction.",
+      "type": "declaration_required",
+      "verdict": "HUMAN_DECISION",
+      "exceptions": []
+    },
+    {
+      "id": "junction_is_not_product_boundary_replacement",
+      "title": "A junction is not a replacement for product and layer boundaries.",
+      "type": "declaration_required",
+      "verdict": "HUMAN_DECISION",
       "exceptions": []
     },
     {
