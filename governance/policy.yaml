@@ -5,13 +5,13 @@ principles:
     title: Govern agents by capability, not by obedience.
     description: Do not ask agents to behave. Constrain what they can read, write, execute, and escalate.
 
-  - id: named_junction_for_meaningful_cross_domain_work
-    title: Meaningful cross-domain work must be a small named junction.
-    description: When cross-domain coordination has business meaning, do not treat it as broad vertical-slice freedom. Name the junction, bound it, and keep the diff small.
+  - id: layer_boundaries_by_default
+    title: Keep layer boundaries by default.
+    description: Horizontal layer boundaries are the default editing boundary because they limit implementation responsibility without introducing ambiguous product-boundary choices.
 
-  - id: dual_product_and_layer_boundaries
-    title: Keep both product and layer boundaries unless working inside a named junction.
-    description: A product boundary limits the feature world. A layer boundary limits the implementation responsibility. Non-junction work should stay inside both.
+  - id: named_junction_for_side_effect_crossings
+    title: Use small named junctions for side-effect crossings.
+    description: Junctions are for unavoidable crossings where side effects meet and the coordination itself has meaning. They are controlled exceptions, not a general architecture style.
 
   - id: prefer_local_duplication_over_premature_shared_abstraction
     title: Prefer local duplication over premature shared abstraction.
@@ -24,16 +24,6 @@ verdicts:
   HUMAN_DECISION: Requires explicit human approval.
 
 rules:
-  - id: one_primary_product_boundary
-    title: One task, one primary product boundary.
-    agent_guidance: Keep the task inside its granted product boundary.
-    type: product_count
-    max_products: 1
-    on_violation: SPLIT
-    exceptions:
-      - vertical_slice
-      - junction_integration
-
   - id: one_primary_layer_boundary
     title: One task, one primary layer boundary unless it is a named junction.
     agent_guidance: Keep non-junction work inside one granted layer such as ui, app-flow, protocol, runtime, model, persistence, or docs.
@@ -91,28 +81,29 @@ rules:
       - THREADS.md
     on_change: BLOCK
 
-  - id: meaningful_cross_domain_requires_named_junction
-    title: Meaningful cross-domain coordination requires a named junction.
-    agent_guidance: If cross-domain coordination is the business meaning of the work, use a small named junction instead of widening a general actor.
+  - id: side_effect_crossing_requires_named_junction
+    title: Side-effect crossings require a named junction.
+    agent_guidance: If side effects meet and their ordering, failure semantics, retry, compensation, or observability matter, use a small named junction instead of widening a general actor.
     type: declaration_required
-    required_when: cross_domain_has_business_meaning
+    required_when: side_effect_crossing_has_coordination_semantics
     required_declaration:
       - junction_name
-      - participating_domains
+      - participating_effects
       - coordination_semantics
+      - execution_order
       - failure_semantics
+      - retry_or_compensation_policy
       - acceptance_criteria
       - rollback_plan
     on_violation: HUMAN_DECISION
 
-  - id: junction_is_not_product_boundary_replacement
-    title: A junction is not a replacement for product and layer boundaries.
-    agent_guidance: Do not use junction work as a reason to edit unrelated products, unrelated layers, or shared abstractions.
+  - id: junction_is_controlled_exception
+    title: A junction is a controlled exception.
+    agent_guidance: Do not use junction work as a reason to edit unrelated layers, domains, or shared abstractions. Keep the junction as the smallest named crossing that explains the coordination.
     type: declaration_required
     required_when: junction_integration
     required_declaration:
       - junction_name
-      - product_boundary
       - participating_layers
       - smallest_boundary
       - explicitly_out_of_scope
