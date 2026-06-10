@@ -8,6 +8,8 @@ The source of truth is policy and capability definitions under `governance/`. If
 
 - **Govern agents by capability, not by obedience.**
   Do not ask agents to behave. Constrain what they can read, write, execute, and escalate.
+- **Meaningful cross-domain work must be a small named junction.**
+  When cross-domain coordination has business meaning, do not treat it as broad vertical-slice freedom. Name the junction, bound it, and keep the diff small.
 
 ## Working rules
 
@@ -16,6 +18,7 @@ The source of truth is policy and capability definitions under `governance/`. If
 - Do not edit shared code without explicit approval.
 - Do not add, remove, or modify dependencies without explicit approval.
 - Do not edit generated files unless explicitly granted.
+- If cross-domain coordination is the business meaning of the work, use a small named junction instead of widening a general actor.
 - If the task cannot be completed inside scope, request escalation instead of editing wider.
 
 ## Actor presets
@@ -48,6 +51,13 @@ Logic/model changes inside one granted domain.
 Edit governance definitions, generation scripts, and checker logic.
 
 - Capability profile: `governance_patch`
+
+### junction_integrator
+
+Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.
+
+- Capability profile: `junction_integration`
+- Requires explicit human approval before execution.
 
 ### vertical_slice_worker
 
