@@ -1,0 +1,149 @@
+version: 1
+
+purpose: >
+  Suspicious patterns are heuristic smell signals. They are not structural violations
+  by themselves. They produce a suspicion score used to route changes to semantic review.
+
+output_axis:
+  score_range: 0-100
+  levels:
+    LOW:
+      min_score: 0
+      max_score: 29
+      action: PASS_FAST
+    MEDIUM:
+      min_score: 30
+      max_score: 59
+      action: WARN_ONLY
+    NEEDS_SEMANTIC_REVIEW:
+      min_score: 60
+      max_score: 79
+      action: ROUTE_TO_HEAVY_REVIEWER
+    HIGH:
+      min_score: 80
+      max_score: 100
+      action: HUMAN_DECISION
+
+scoring_rules:
+  - id: lower_layer_presentation_terms
+    description: Lower layers gained terms that often indicate presentation responsibility leaking downward.
+    score: 30
+    applies_to_classes:
+      - protocol
+      - runtime
+      - persistence
+      - model
+    terms:
+      - display
+      - label
+      - badge
+      - color
+      - icon
+      - tooltip
+      - copy
+      - title
+      - subtitle
+      - card
+      - section
+      - view
+      - emptyState
+
+  - id: runtime_ui_terms
+    description: Runtime code gained UI interaction or presentation vocabulary.
+    score: 25
+    applies_to_classes:
+      - runtime
+    terms:
+      - toast
+      - modal
+      - button
+      - selected
+      - highlighted
+      - focus
+      - affordance
+      - emptyState
+
+  - id: shared_domain_terms
+    description: Shared code gained product/domain vocabulary, which may indicate shared escape.
+    score: 30
+    applies_to_classes:
+      - shared_pure
+      - shared_ui
+    terms:
+      - task
+      - session
+      - codex
+      - attention
+      - child
+      - approval
+      - supervision
+      - agent
+      - worktree
+
+  - id: side_effect_terms_without_junction
+    description: Multiple side-effect vocabularies appear in a non-junction diff.
+    score: 20
+    requires_absence_of:
+      - junction_name
+    terms_any_two_groups:
+      process:
+        - spawn
+        - process
+        - kill
+        - cleanup
+        - pid
+      storage:
+        - persist
+        - storage
+        - database
+        - migration
+        - save
+      transport:
+        - websocket
+        - request
+        - response
+        - protocol
+        - message
+      external_tool:
+        - codex
+        - claude
+        - goose
+        - shell
+        - command
+
+  - id: large_diff
+    description: Diff is large enough to make semantic review more valuable.
+    score: 20
+    thresholds:
+      changed_files: 8
+      changed_lines: 400
+
+  - id: missing_tests
+    description: Non-doc behavior change without nearby test changes.
+    score: 10
+    applies_when:
+      changed_code: true
+      changed_tests: false
+
+  - id: mixed_formatting_and_behavior
+    description: Formatting cleanup appears mixed with behavior changes.
+    score: 15
+    terms:
+      - prettier
+      - format
+      - lint fix
+      - cleanup
+      - rename
+
+aggregation:
+  max_score: 100
+  combine: sum_capped
+  note: Scores route review. They do not prove the change is wrong.
+
+recommended_output:
+  verdict: PASS | BLOCK | SPLIT | HUMAN_DECISION
+  suspicion:
+    score: number
+    level: LOW | MEDIUM | NEEDS_SEMANTIC_REVIEW | HIGH
+    reasons: []
+  recommended_next_step: PASS_FAST | WARN_ONLY | ROUTE_TO_HEAVY_REVIEWER | HUMAN_DECISION
