@@ -27,19 +27,21 @@ function toArray(value) {
   return Array.isArray(value) ? value : [value];
 }
 
-function buildCheckerPolicy({ policy, domains, capabilities }) {
+function buildCheckerPolicy({ policy, domains, capabilities, actors }) {
   return {
     version: policy.version ?? 1,
     generatedFrom: [
       'governance/policy.yaml',
       'governance/domains.yaml',
-      'governance/capabilities.yaml'
+      'governance/capabilities.yaml',
+      'governance/actors.yaml'
     ],
     verdicts: policy.verdicts ?? capabilities.verdicts ?? {},
     principles: policy.principles ?? [],
     domains: domains.domains ?? {},
     protectedDomains: domains.protected_domains ?? {},
     capabilityProfiles: capabilities.capability_profiles ?? {},
+    actors: actors.actors ?? {},
     rules: toArray(policy.rules).map((rule) => ({
       id: rule.id,
       title: rule.title,
@@ -53,15 +55,16 @@ function buildCheckerPolicy({ policy, domains, capabilities }) {
   };
 }
 
-function renderAgentsMarkdown({ policy }) {
+function renderAgentsMarkdown({ policy, actors }) {
   const principles = toArray(policy.principles);
   const rules = toArray(policy.rules);
   const verdicts = policy.verdicts ?? {};
+  const actorEntries = Object.entries(actors.actors ?? {});
 
   const lines = [];
   lines.push('# AGENTS.md');
   lines.push('');
-  lines.push('This file is generated from `governance/policy.yaml`.');
+  lines.push('This file is generated from `governance/policy.yaml` and `governance/actors.yaml`.');
   lines.push('');
   lines.push('The source of truth is policy and capability definitions under `governance/`. If this file conflicts with policy, policy wins.');
   lines.push('');
@@ -82,6 +85,32 @@ function renderAgentsMarkdown({ policy }) {
   for (const rule of rules) {
     const guidance = rule.agent_guidance ?? rule.title;
     lines.push(`- ${guidance}`);
+  }
+
+  if (actorEntries.length > 0) {
+    lines.push('');
+    lines.push('## Actor presets');
+    lines.push('');
+    lines.push('Actors are capability presets, not personalities. Use the actor that matches the granted work.');
+    lines.push('');
+
+    for (const [actorName, actor] of actorEntries) {
+      lines.push(`### ${actorName}`);
+      lines.push('');
+      lines.push(actor.description ?? 'No description.');
+      lines.push('');
+      lines.push(`- Capability profile: \`${actor.capability_profile}\``);
+      if (actor.requires_domain) {
+        lines.push('- Requires an explicit domain grant.');
+      }
+      if (actor.requires_human_approval) {
+        lines.push('- Requires explicit human approval before execution.');
+      }
+      if (actor.default_domain) {
+        lines.push(`- Default domain: \`${actor.default_domain}\``);
+      }
+      lines.push('');
+    }
   }
 
   lines.push('');
@@ -108,9 +137,10 @@ function main() {
   const policy = readYaml('governance/policy.yaml');
   const domains = readYaml('governance/domains.yaml');
   const capabilities = readYaml('governance/capabilities.yaml');
+  const actors = readYaml('governance/actors.yaml');
 
-  const checkerPolicy = buildCheckerPolicy({ policy, domains, capabilities });
-  const agentsMarkdown = renderAgentsMarkdown({ policy });
+  const checkerPolicy = buildCheckerPolicy({ policy, domains, capabilities, actors });
+  const agentsMarkdown = renderAgentsMarkdown({ policy, actors });
 
   writeText('governance/generated/checker-policy.json', JSON.stringify(checkerPolicy, null, 2));
   writeText('governance/generated/AGENTS.md', agentsMarkdown);
