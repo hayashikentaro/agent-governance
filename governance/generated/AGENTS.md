@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file is generated from `governance/policy.yaml`.
+This file is generated from `governance/policy.yaml` and `governance/actors.yaml`.
 
 The source of truth is policy and capability definitions under `governance/`. If this file conflicts with policy, policy wins.
 
@@ -17,6 +17,44 @@ The source of truth is policy and capability definitions under `governance/`. If
 - Do not add, remove, or modify dependencies without explicit approval.
 - Do not edit generated files unless explicitly granted.
 - If the task cannot be completed inside scope, request escalation instead of editing wider.
+
+## Actor presets
+
+Actors are capability presets, not personalities. Use the actor that matches the granted work.
+
+### docs_writer
+
+Documentation-only work.
+
+- Capability profile: `docs_only`
+- Default domain: `docs`
+
+### ui_patcher
+
+Small UI-only changes inside one granted domain.
+
+- Capability profile: `ui_patch`
+- Requires an explicit domain grant.
+
+### domain_logic_patcher
+
+Logic/model changes inside one granted domain.
+
+- Capability profile: `domain_logic_patch`
+- Requires an explicit domain grant.
+
+### governance_editor
+
+Edit governance definitions, generation scripts, and checker logic.
+
+- Capability profile: `governance_patch`
+
+### vertical_slice_worker
+
+Cross-domain feature work with explicit human approval.
+
+- Capability profile: `vertical_slice`
+- Requires explicit human approval before execution.
 
 ## Completion
 
