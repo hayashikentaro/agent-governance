@@ -5,6 +5,10 @@ principles:
     title: Govern agents by capability, not by obedience.
     description: Do not ask agents to behave. Constrain what they can read, write, execute, and escalate.
 
+  - id: named_junction_for_meaningful_cross_domain_work
+    title: Meaningful cross-domain work must be a small named junction.
+    description: When cross-domain coordination has business meaning, do not treat it as broad vertical-slice freedom. Name the junction, bound it, and keep the diff small.
+
 verdicts:
   PASS: Allowed.
   BLOCK: Must be fixed before review.
@@ -21,6 +25,7 @@ rules:
     exceptions:
       - vertical_slice
       - api_contract_update
+      - junction_integration
 
   - id: granted_write_scope_only
     title: Write only inside granted paths.
@@ -56,6 +61,20 @@ rules:
       - CONTEXT.md
       - THREADS.md
     on_change: BLOCK
+
+  - id: meaningful_cross_domain_requires_named_junction
+    title: Meaningful cross-domain coordination requires a named junction.
+    agent_guidance: If cross-domain coordination is the business meaning of the work, use a small named junction instead of widening a general actor.
+    type: declaration_required
+    required_when: cross_domain_has_business_meaning
+    required_declaration:
+      - junction_name
+      - participating_domains
+      - coordination_semantics
+      - failure_semantics
+      - acceptance_criteria
+      - rollback_plan
+    on_violation: HUMAN_DECISION
 
   - id: escalate_when_scope_is_insufficient
     title: Request escalation instead of expanding scope.
