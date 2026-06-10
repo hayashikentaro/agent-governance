@@ -10,15 +10,22 @@ The source of truth is policy and capability definitions under `governance/`. If
   Do not ask agents to behave. Constrain what they can read, write, execute, and escalate.
 - **Meaningful cross-domain work must be a small named junction.**
   When cross-domain coordination has business meaning, do not treat it as broad vertical-slice freedom. Name the junction, bound it, and keep the diff small.
+- **Keep both product and layer boundaries unless working inside a named junction.**
+  A product boundary limits the feature world. A layer boundary limits the implementation responsibility. Non-junction work should stay inside both.
+- **Prefer local duplication over premature shared abstraction.**
+  Boilerplate is acceptable when it preserves capability boundaries. Shared abstractions are privileged because they widen future change scope.
 
 ## Working rules
 
+- Keep the task inside its granted product boundary.
+- Keep non-junction work inside one granted layer such as ui, app-flow, protocol, runtime, model, persistence, or docs.
 - Keep the task inside its granted primary domain.
 - Do not edit outside the write paths granted by your task contract.
-- Do not edit shared code without explicit approval.
+- Do not edit shared code without explicit approval. Prefer local duplication when the alternative is premature shared abstraction.
 - Do not add, remove, or modify dependencies without explicit approval.
 - Do not edit generated files unless explicitly granted.
 - If cross-domain coordination is the business meaning of the work, use a small named junction instead of widening a general actor.
+- Do not use junction work as a reason to edit unrelated products, unrelated layers, or shared abstractions.
 - If the task cannot be completed inside scope, request escalation instead of editing wider.
 
 ## Actor presets
