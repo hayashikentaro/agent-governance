@@ -4,13 +4,21 @@
     "governance/policy.yaml",
     "governance/domains.yaml",
     "governance/capabilities.yaml",
-    "governance/actors.yaml"
+    "governance/actors.yaml",
+    "governance/import-boundaries.yaml",
+    "governance/suspicious-patterns.yaml"
   ],
   "verdicts": {
     "PASS": "Allowed.",
     "BLOCK": "Must be fixed before review.",
     "SPLIT": "Must be split into smaller tasks or PRs.",
     "HUMAN_DECISION": "Requires explicit human approval."
+  },
+  "suspicionLevels": {
+    "LOW": {"minScore": 0, "maxScore": 29, "action": "PASS_FAST"},
+    "MEDIUM": {"minScore": 30, "maxScore": 59, "action": "WARN_ONLY"},
+    "NEEDS_SEMANTIC_REVIEW": {"minScore": 60, "maxScore": 79, "action": "ROUTE_TO_HEAVY_REVIEWER"},
+    "HIGH": {"minScore": 80, "maxScore": 100, "action": "HUMAN_DECISION"}
   },
   "principles": [
     {
@@ -32,188 +40,16 @@
       "id": "prefer_local_duplication_over_premature_shared_abstraction",
       "title": "Prefer local duplication over premature shared abstraction.",
       "description": "Boilerplate is acceptable when it preserves capability boundaries. Shared abstractions are privileged because they widen future change scope."
+    },
+    {
+      "id": "verdicts_for_structure_scores_for_suspicion",
+      "title": "Use verdicts for structural violations and scores for semantic suspicion.",
+      "description": "Deterministic policy violations should produce verdicts. Heuristic smells should produce suspicion scores that route work to semantic review."
     }
   ],
-  "domains": {
-    "web_attention": {
-      "description": "Web UI and client-side behavior for attention/supervision state.",
-      "paths": ["apps/web/src/domains/attention/**"]
-    },
-    "web_task_list": {
-      "description": "Web UI and client-side behavior for task list presentation.",
-      "paths": ["apps/web/src/domains/task-list/**"]
-    },
-    "server_attention": {
-      "description": "Server-side attention/supervision classification and persistence.",
-      "paths": ["apps/server/src/domains/attention/**"]
-    },
-    "core_attention": {
-      "description": "Shared core types and logic for attention/supervision state.",
-      "paths": ["packages/core/src/domains/attention/**"]
-    },
-    "docs": {
-      "description": "Documentation only.",
-      "paths": ["README.md", "docs/**"]
-    }
-  },
-  "protectedDomains": {
-    "shared": {
-      "description": "Shared code is privileged. Do not use it as a dumping ground.",
-      "paths": ["apps/**/src/shared/**", "packages/shared/**"],
-      "default_verdict": "HUMAN_DECISION"
-    }
-  },
-  "capabilityProfiles": {
-    "ui_patch": {
-      "description": "Patch UI inside one granted domain.",
-      "read": ["{domain}/**", "packages/core/src/domains/**/types/**"],
-      "write": ["{domain}/ui/**", "{domain}/tests/**"],
-      "execute": ["pnpm lint", "pnpm test"],
-      "denied": ["package.json", "pnpm-lock.yaml", "package-lock.json", "apps/server/**"],
-      "escalation": {
-        "outside_write_scope": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION"
-      }
-    },
-    "domain_logic_patch": {
-      "description": "Patch logic inside one granted domain.",
-      "read": ["{domain}/**", "packages/core/**"],
-      "write": ["{domain}/logic/**", "{domain}/model/**", "{domain}/tests/**"],
-      "execute": ["pnpm lint", "pnpm test", "pnpm typecheck"],
-      "denied": ["package.json", "pnpm-lock.yaml", "package-lock.json"],
-      "escalation": {
-        "outside_write_scope": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION"
-      }
-    },
-    "docs_only": {
-      "description": "Documentation-only work.",
-      "read": ["**/*"],
-      "write": ["README.md", "docs/**"],
-      "execute": [],
-      "denied": ["package.json", "pnpm-lock.yaml", "package-lock.json", "apps/**", "packages/**"],
-      "escalation": {"code_change": "BLOCK"}
-    },
-    "junction_integration": {
-      "description": "Coordinate a small named junction where side effects meet and coordination semantics matter.",
-      "requires_human_approval": true,
-      "max_domains": 3,
-      "max_changed_files": 8,
-      "max_changed_lines": 400,
-      "write": ["src/junctions/{junction}/**", "src/tests/junctions/{junction}.test.*", "docs/junctions/{junction}.md"],
-      "readonly": ["src/core/**", "src/domains/**", "src/adapters/**", "src/runtime/**"],
-      "required_declaration": [
-        "junction_name",
-        "participating_effects",
-        "coordination_semantics",
-        "execution_order",
-        "failure_semantics",
-        "retry_or_compensation_policy",
-        "acceptance_criteria",
-        "rollback_plan"
-      ],
-      "escalation": {
-        "unnamed_cross_domain_work": "BLOCK",
-        "outside_junction_boundary": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION"
-      }
-    },
-    "vertical_slice": {
-      "description": "Explicitly approved cross-domain feature work.",
-      "requires_human_approval": true,
-      "max_domains": 3,
-      "max_changed_files": 8,
-      "max_changed_lines": 400,
-      "required_declaration": ["affected_domains", "reason", "acceptance_criteria", "rollback_plan", "split_plan"],
-      "escalation": {
-        "undeclared_domain": "BLOCK",
-        "dependency_change": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION"
-      }
-    }
-  },
-  "actors": {
-    "docs_writer": {
-      "description": "Documentation-only work.",
-      "capability_profile": "docs_only",
-      "default_domain": "docs",
-      "write": ["README.md", "docs/**"],
-      "denied": ["apps/**", "packages/**", "package.json", "pnpm-lock.yaml", "package-lock.json"],
-      "escalation": {"code_change": "BLOCK"}
-    },
-    "ui_patcher": {
-      "description": "Small UI-only changes inside one granted domain.",
-      "capability_profile": "ui_patch",
-      "requires_domain": true,
-      "write": ["{domain}/ui/**", "{domain}/tests/**"],
-      "denied": ["apps/server/**", "packages/core/**", "package.json", "pnpm-lock.yaml", "package-lock.json"],
-      "escalation": {
-        "outside_domain": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION"
-      }
-    },
-    "domain_logic_patcher": {
-      "description": "Logic/model changes inside one granted domain.",
-      "capability_profile": "domain_logic_patch",
-      "requires_domain": true,
-      "write": ["{domain}/logic/**", "{domain}/model/**", "{domain}/tests/**"],
-      "denied": ["apps/**/src/shared/**", "packages/shared/**", "package.json", "pnpm-lock.yaml", "package-lock.json"],
-      "escalation": {
-        "outside_domain": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION"
-      }
-    },
-    "governance_editor": {
-      "description": "Edit governance definitions, generation scripts, and checker logic.",
-      "capability_profile": "governance_patch",
-      "write": ["governance/**", "scripts/**", "package.json"],
-      "escalation": {
-        "dependency_change": "HUMAN_DECISION",
-        "workflow_change": "HUMAN_DECISION"
-      }
-    },
-    "junction_integrator": {
-      "description": "Coordinate a small named junction across multiple domains when side effects meet and their coordination semantics matter.",
-      "capability_profile": "junction_integration",
-      "requires_human_approval": true,
-      "write": ["src/junctions/{junction}/**", "src/tests/junctions/{junction}.test.*", "docs/junctions/{junction}.md"],
-      "readonly": ["src/core/**", "src/domains/**", "src/adapters/**", "src/runtime/**"],
-      "limits": {"max_domains": 3, "max_changed_files": 8, "max_changed_lines": 400},
-      "required_declaration": [
-        "junction_name",
-        "participating_domains",
-        "participating_effects",
-        "coordination_semantics",
-        "execution_order",
-        "failure_semantics",
-        "compensation_or_retry_policy",
-        "acceptance_criteria",
-        "rollback_plan"
-      ],
-      "forbidden_mix": ["feature_change + unrelated_refactor", "dependency_change + junction_change", "formatting_cleanup + behavior_change"],
-      "escalation": {
-        "unnamed_cross_domain_work": "BLOCK",
-        "outside_junction_boundary": "HUMAN_DECISION",
-        "shared_change": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION"
-      }
-    },
-    "vertical_slice_worker": {
-      "description": "Cross-domain feature work with explicit human approval.",
-      "capability_profile": "vertical_slice",
-      "requires_human_approval": true,
-      "required_declaration": ["affected_domains", "reason", "rollback_plan"],
-      "escalation": {
-        "undeclared_domain": "BLOCK",
-        "shared_change": "HUMAN_DECISION",
-        "dependency_change": "HUMAN_DECISION"
-      }
-    }
+  "policySources": {
+    "importBoundaries": "governance/import-boundaries.yaml",
+    "suspiciousPatterns": "governance/suspicious-patterns.yaml"
   },
   "rules": [
     {
@@ -237,6 +73,25 @@
       "title": "Write only inside granted paths.",
       "type": "write_scope",
       "verdict": "BLOCK",
+      "exceptions": []
+    },
+    {
+      "id": "import_boundaries_are_structural",
+      "title": "Import boundaries are structural policy, not semantic review.",
+      "type": "import_boundary",
+      "source": "governance/import-boundaries.yaml",
+      "verdict": "BLOCK",
+      "exceptions": []
+    },
+    {
+      "id": "suspicious_patterns_route_semantic_review",
+      "title": "Suspicious patterns route work to semantic review.",
+      "type": "suspicion_score",
+      "source": "governance/suspicious-patterns.yaml",
+      "thresholds": {
+        "NEEDS_SEMANTIC_REVIEW": "HUMAN_DECISION",
+        "HIGH": "HUMAN_DECISION"
+      },
       "exceptions": []
     },
     {
