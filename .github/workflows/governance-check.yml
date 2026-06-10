@@ -1,0 +1,36 @@
+name: Governance check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  governance-check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate governance outputs
+        run: npm run generate
+
+      - name: Collect changed files
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed-files.txt
+          cat changed-files.txt
+
+      - name: Check changed files against governance policy
+        run: npm run check:changed-files -- --files-from changed-files.txt
