@@ -1,0 +1,64 @@
+version: 1
+
+principles:
+  - id: capability_not_obedience
+    title: Govern agents by capability, not by obedience.
+    description: Do not ask agents to behave. Constrain what they can read, write, execute, and escalate.
+
+verdicts:
+  PASS: Allowed.
+  BLOCK: Must be fixed before review.
+  SPLIT: Must be split into smaller tasks or PRs.
+  HUMAN_DECISION: Requires explicit human approval.
+
+rules:
+  - id: one_primary_domain
+    title: One task, one primary domain.
+    agent_guidance: Keep the task inside its granted primary domain.
+    type: domain_count
+    max_domains: 1
+    on_violation: SPLIT
+    exceptions:
+      - vertical_slice
+      - api_contract_update
+
+  - id: granted_write_scope_only
+    title: Write only inside granted paths.
+    agent_guidance: Do not edit outside the write paths granted by your task contract.
+    type: write_scope
+    on_violation: BLOCK
+
+  - id: shared_requires_approval
+    title: Shared changes require approval.
+    agent_guidance: Do not edit shared code without explicit approval.
+    type: protected_domain
+    domains:
+      - shared
+    on_violation: HUMAN_DECISION
+
+  - id: dependency_requires_approval
+    title: Dependency changes require approval.
+    agent_guidance: Do not add, remove, or modify dependencies without explicit approval.
+    type: path_match
+    paths:
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+    on_change: HUMAN_DECISION
+
+  - id: generated_files_readonly
+    title: Generated files are read-only.
+    agent_guidance: Do not edit generated files unless explicitly granted.
+    type: path_match
+    paths:
+      - '**/generated/**'
+      - TODO.md
+      - CONTEXT.md
+      - THREADS.md
+    on_change: BLOCK
+
+  - id: escalate_when_scope_is_insufficient
+    title: Request escalation instead of expanding scope.
+    agent_guidance: If the task cannot be completed inside scope, request escalation instead of editing wider.
+    type: escalation_required
+    on_violation: HUMAN_DECISION
