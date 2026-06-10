@@ -1,0 +1,126 @@
+version: 1
+
+purpose: >
+  Import boundaries are deterministic structural policy. They are checked by scripts,
+  not by LLM review. If a dependency direction is forbidden here, the change should be
+  rejected before semantic review.
+
+path_classes:
+  - id: ui
+    description: Presentation, layout, user interaction affordances, visual grouping, labels, copy, icons, and accessibility text.
+    paths:
+      - "apps/web/src/**/ui/**"
+      - "apps/web/src/components/**"
+      - "apps/web/src/shared/ui/**"
+
+  - id: app_flow
+    description: Client-side orchestration between UI, protocol, and model state.
+    paths:
+      - "apps/web/src/**/app-flow/**"
+      - "apps/web/src/**/flow/**"
+      - "apps/web/src/**/hooks/**"
+
+  - id: protocol
+    description: Request/response shapes, parsers, validators, compatibility rules, and transport contracts.
+    paths:
+      - "apps/**/src/**/protocol/**"
+      - "packages/core/src/**/protocol/**"
+
+  - id: runtime
+    description: Process lifecycle, command execution, environment injection, cleanup, and external side-effect execution.
+    paths:
+      - "apps/server/src/**/runtime/**"
+      - "apps/server/src/**/process/**"
+      - "apps/server/src/**/adapters/**"
+
+  - id: persistence
+    description: Storage, migrations, database schema, serialization, and durable state.
+    paths:
+      - "apps/**/src/**/persistence/**"
+      - "apps/**/src/**/storage/**"
+      - "apps/**/src/**/db/**"
+      - "migrations/**"
+
+  - id: model
+    description: Pure domain model, types, state transitions, and business semantics.
+    paths:
+      - "packages/core/src/**"
+      - "apps/**/src/**/model/**"
+      - "apps/**/src/**/logic/**"
+
+  - id: shared_pure
+    description: Semantically neutral pure utilities without product meaning.
+    paths:
+      - "apps/**/src/shared/pure/**"
+      - "packages/shared/pure/**"
+
+  - id: shared_ui
+    description: UI primitives and semantically neutral visual components.
+    paths:
+      - "apps/web/src/shared/ui/**"
+      - "packages/shared/ui/**"
+
+external_imports:
+  default: allow
+  note: Dependency additions or package changes are governed separately by dependency policy.
+
+unclassified:
+  importer: HUMAN_DECISION
+  target: WARN
+  note: Classification gaps should be fixed in this file instead of asking an LLM to decide import legality.
+
+rules:
+  ui:
+    may_import:
+      - app_flow
+      - protocol
+      - model
+      - shared_ui
+      - shared_pure
+
+  app_flow:
+    may_import:
+      - protocol
+      - model
+      - shared_pure
+
+  protocol:
+    may_import:
+      - model
+      - shared_pure
+
+  runtime:
+    may_import:
+      - protocol
+      - model
+      - shared_pure
+
+  persistence:
+    may_import:
+      - model
+      - shared_pure
+
+  model:
+    may_import:
+      - shared_pure
+
+  shared_ui:
+    may_import:
+      - shared_pure
+
+  shared_pure:
+    may_import: []
+
+forbidden_examples:
+  - from: runtime
+    to: ui
+    reason: Lower layers must not own presentation concerns.
+  - from: protocol
+    to: ui
+    reason: Protocol must not depend on presentation.
+  - from: model
+    to: runtime
+    reason: Model/core must not depend on side-effect execution.
+  - from: shared_pure
+    to: model
+    reason: Shared pure utilities must remain semantically neutral.
