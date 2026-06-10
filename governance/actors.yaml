@@ -68,6 +68,43 @@ actors:
       dependency_change: HUMAN_DECISION
       workflow_change: HUMAN_DECISION
 
+  junction_integrator:
+    description: Coordinate a small named junction across multiple domains when the cross-domain relationship itself has business meaning.
+    capability_profile: junction_integration
+    requires_human_approval: true
+    write:
+      - "src/junctions/{junction}/**"
+      - "src/tests/junctions/{junction}.test.*"
+      - "docs/junctions/{junction}.md"
+    readonly:
+      - src/core/**
+      - src/domains/**
+      - src/adapters/**
+      - src/runtime/**
+    limits:
+      max_domains: 3
+      max_changed_files: 8
+      max_changed_lines: 400
+    required_declaration:
+      - junction_name
+      - participating_domains
+      - participating_effects
+      - coordination_semantics
+      - execution_order
+      - failure_semantics
+      - compensation_or_retry_policy
+      - acceptance_criteria
+      - rollback_plan
+    forbidden_mix:
+      - feature_change + unrelated_refactor
+      - dependency_change + junction_change
+      - formatting_cleanup + behavior_change
+    escalation:
+      unnamed_cross_domain_work: BLOCK
+      outside_junction_boundary: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
+
   vertical_slice_worker:
     description: Cross-domain feature work with explicit human approval.
     capability_profile: vertical_slice
