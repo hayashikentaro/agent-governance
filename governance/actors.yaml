@@ -1,0 +1,82 @@
+version: 1
+
+# Actors are not personalities or human job titles.
+# They are safe capability presets for real work.
+
+actors:
+  docs_writer:
+    description: Documentation-only work.
+    capability_profile: docs_only
+    default_domain: docs
+    write:
+      - README.md
+      - docs/**
+    denied:
+      - apps/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+    escalation:
+      code_change: BLOCK
+
+  ui_patcher:
+    description: Small UI-only changes inside one granted domain.
+    capability_profile: ui_patch
+    requires_domain: true
+    write:
+      - "{domain}/ui/**"
+      - "{domain}/tests/**"
+    denied:
+      - apps/server/**
+      - packages/core/**
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+    escalation:
+      outside_domain: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
+
+  domain_logic_patcher:
+    description: Logic/model changes inside one granted domain.
+    capability_profile: domain_logic_patch
+    requires_domain: true
+    write:
+      - "{domain}/logic/**"
+      - "{domain}/model/**"
+      - "{domain}/tests/**"
+    denied:
+      - apps/**/src/shared/**
+      - packages/shared/**
+      - package.json
+      - pnpm-lock.yaml
+      - package-lock.json
+    escalation:
+      outside_domain: HUMAN_DECISION
+      shared_change: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
+
+  governance_editor:
+    description: Edit governance definitions, generation scripts, and checker logic.
+    capability_profile: governance_patch
+    write:
+      - governance/**
+      - scripts/**
+      - package.json
+    escalation:
+      dependency_change: HUMAN_DECISION
+      workflow_change: HUMAN_DECISION
+
+  vertical_slice_worker:
+    description: Cross-domain feature work with explicit human approval.
+    capability_profile: vertical_slice
+    requires_human_approval: true
+    required_declaration:
+      - affected_domains
+      - reason
+      - rollback_plan
+    escalation:
+      undeclared_domain: BLOCK
+      shared_change: HUMAN_DECISION
+      dependency_change: HUMAN_DECISION
